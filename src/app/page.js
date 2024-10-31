@@ -11,6 +11,23 @@ export default function Component() {
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [filter, setFilter] = useState("all");
   const [watchedPercentage, setWatchedPercentage] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollButton(window.scrollY > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   useEffect(() => {
     const savedWatchedMovies =
@@ -26,6 +43,35 @@ export default function Component() {
   }, [watchedMovies]);
 
   const toggleWatched = (id) => {
+    // Eğer izlenmiş olarak işaretleniyorsa, önceki filmleri kontrol eder
+    if (!watchedMovies.includes(id)) {
+      const currentMovieIndex = marvelWatchlist.findIndex(
+        (movie) => movie.id === id
+      );
+
+      // Eğer bu filmden önce işaretlenmemiş filmler varsa kullanıcıya sorar
+      if (
+        currentMovieIndex > 0 &&
+        marvelWatchlist
+          .slice(0, currentMovieIndex)
+          .some((movie) => !watchedMovies.includes(movie.id))
+      ) {
+        const confirmMarkAll = window.confirm(
+          "Önceki filmleri de 'Watched' olarak işaretlemek ister misiniz?"
+        );
+
+        if (confirmMarkAll) {
+          // Tüm önceki filmleri 'Watched' olarak işaretler
+          const allPreviousMovies = marvelWatchlist
+            .slice(0, currentMovieIndex + 1)
+            .map((movie) => movie.id);
+          setWatchedMovies((prev) => [...new Set([...prev, ...allPreviousMovies])]);
+          return;
+        }
+      }
+    }
+    
+    // Tekil işaretleme işlemini gerçekleştirir
     setWatchedMovies((prev) =>
       prev.includes(id)
         ? prev.filter((movieId) => movieId !== id)
@@ -62,6 +108,15 @@ export default function Component() {
             Watched Percentage: {watchedPercentage}%
           </p>
         </div>
+
+        {showScrollButton && (
+          <Button
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-8 p-3 z-50 rounded-full shadow-md focus:outline-none"
+          >
+            En Üste Çık
+          </Button>
+        )}
 
         <div className="grid grid-cols-2 md:flex md:justify-center gap-4 mb-8">
           <Button
