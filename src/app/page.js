@@ -47,8 +47,11 @@ export default function Component() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-2">
-          Marvel Movies Checklist
+        <h1 className="w-full flex justify-center items-center text-4xl font-bold text-center mb-2 gap-3">
+          <img src="/marvel.jpg" 
+          className="w-20 h-14 rounded-md"
+          />
+          Movies Checklist
         </h1>
         <p className="text-center text-gray-600 mb-8">
           Keep track of the Marvel movies you have watched!
@@ -112,12 +115,18 @@ export default function Component() {
                 <div className="flex justify-between flex-col p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-xl font-semibold">{movie.title}</h2>
-                    {isWatched && (
+                    {isWatched ? (
                       <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-800"
+                        className="bg-red-500 text-white"
                       >
                         Watched
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className="bg-gray-200 text-black"
+                      >
+                        Unwatched
                       </Badge>
                     )}
                   </div>
