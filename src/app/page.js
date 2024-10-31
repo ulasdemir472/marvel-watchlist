@@ -49,7 +49,7 @@ export default function Component() {
       .map((movie) => movie.id);
 
     const confirmMarkAll = window.confirm(
-      "Önceki filmleri de 'Watched' olarak işaretlemek ister misiniz?"
+      "Önceki filmleri de 'İzlendi' olarak işaretlemek ister misiniz?"
     );
 
     if (confirmMarkAll) {
@@ -120,15 +120,15 @@ export default function Component() {
       <div className="container mx-auto px-4">
         <h1 className="w-full flex justify-center items-center text-4xl font-bold text-center mb-2 gap-3">
           <img src="/marvel.jpg" className="w-20 h-14 rounded-md" />
-          Movies Checklist
+          Filmler ve Diziler İzleme Listesi
         </h1>
         <p className="text-center text-gray-600 mb-8">
-          Keep track of the Marvel movies you have watched!
+          İzlediğin Marvel filmleri ve dizilerini takip et!
         </p>
 
         <div className="text-center mb-4">
           <p className="text-lg font-medium">
-            Watched Percentage: {watchedPercentage}%
+            İzleme Oranı: {watchedPercentage}%
           </p>
         </div>
 
@@ -146,32 +146,32 @@ export default function Component() {
             onClick={() => setFilter("all")}
             variant={filter === "all" ? "default" : "outline"}
           >
-            Sort By Story
+            Hikayeye göre sırala
           </Button>
           <Button
             onClick={() => setFilter("year")}
             variant={filter === "year" ? "default" : "outline"}
           >
-            Sort By Year
+            Çıkış yılına göre sırala
           </Button>
           <Button
             onClick={() => setFilter("watched")}
             variant={filter === "watched" ? "default" : "outline"}
           >
-            Watched
+            İzlenenler
           </Button>
           <Button
             onClick={() => setFilter("unwatched")}
             variant={filter === "unwatched" ? "default" : "outline"}
           >
-            Unwatched
+            İzlenmeyenler
           </Button>
           <Button
             onClick={handleRemove}
             variant="default"
             className="bg-red-600 text-white"
           >
-            Remove All
+            Bütün işaretlenenleri sil
           </Button>
         </div>
 
@@ -201,13 +201,13 @@ export default function Component() {
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-xl font-semibold">{movie.title}</h2>
                     {isWatched ? (
-                      <Badge className="bg-red-500 text-white">Watched</Badge>
+                      <Badge className="bg-red-500 text-white">İzlendi</Badge>
                     ) : (
                       <Badge
                         variant="secondary"
                         className="bg-gray-200 text-black"
                       >
-                        Unwatched
+                        İzlenmedi
                       </Badge>
                     )}
                   </div>
@@ -223,7 +223,7 @@ export default function Component() {
                       htmlFor={`movie-${movie.id}`}
                       className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      {isWatched ? "Watched" : "Mark as watched"}
+                      {isWatched ? "İzlendi" : "İzlendi olarak işaretle"}
                     </label>
                   </div>
                 </div>
