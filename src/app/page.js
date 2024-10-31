@@ -47,7 +47,7 @@ export default function Component() {
           Marvel Movies Checklist
         </h1>
         <p className="text-center text-gray-600 mb-8">
-          Keep track of the Marvel movies you've watched!
+          Keep track of the Marvel movies you have watched!
         </p>
 
         <div className="flex justify-center space-x-4 mb-8">
