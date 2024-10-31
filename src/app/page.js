@@ -12,6 +12,7 @@ export default function Component() {
   const [filter, setFilter] = useState("all");
   const [watchedPercentage, setWatchedPercentage] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [askConfirmation, setAskConfirmation] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,41 +43,65 @@ export default function Component() {
     );
   }, [watchedMovies]);
 
+  const confirmMarkAllPrevious = (currentMovieIndex) => {
+    const allPreviousMovies = marvelWatchlist
+      .slice(0, currentMovieIndex + 1)
+      .map((movie) => movie.id);
+
+    const confirmMarkAll = window.confirm(
+      "Önceki filmleri de 'Watched' olarak işaretlemek ister misiniz?"
+    );
+
+    if (confirmMarkAll) {
+      setWatchedMovies((prev) => [...new Set([...prev, ...allPreviousMovies])]);
+      return true;
+    } else {
+      setAskConfirmation(false); // Kullanıcı 'Hayır' derse, tekrar sormamak için ayarla
+      return false;
+    }
+  };
+
+  const handleSingleToggle = (id) => {
+    setWatchedMovies((prev) =>
+      prev.includes(id)
+        ? prev.filter((movieId) => movieId !== id)
+        : [...prev, id]
+    );
+  };
+
   const toggleWatched = (id) => {
-    // Eğer izlenmiş olarak işaretleniyorsa, önceki filmleri kontrol eder
     if (!watchedMovies.includes(id)) {
       const currentMovieIndex = marvelWatchlist.findIndex(
         (movie) => movie.id === id
       );
 
-      // Eğer bu filmden önce işaretlenmemiş filmler varsa kullanıcıya sorar
       if (
         currentMovieIndex > 0 &&
         marvelWatchlist
           .slice(0, currentMovieIndex)
           .some((movie) => !watchedMovies.includes(movie.id))
       ) {
-        const confirmMarkAll = window.confirm(
-          "Önceki filmleri de 'Watched' olarak işaretlemek ister misiniz?"
-        );
-
-        if (confirmMarkAll) {
-          // Tüm önceki filmleri 'Watched' olarak işaretler
-          const allPreviousMovies = marvelWatchlist
-            .slice(0, currentMovieIndex + 1)
-            .map((movie) => movie.id);
-          setWatchedMovies((prev) => [...new Set([...prev, ...allPreviousMovies])]);
+        // Eğer askConfirmation true ise onay sor, aksi takdirde direkt geç
+        if (askConfirmation) {
+          const markedAll = confirmMarkAllPrevious(currentMovieIndex);
+          if (!markedAll) {
+            handleSingleToggle(id);
+          }
           return;
         }
       }
     }
-    
-    // Tekil işaretleme işlemini gerçekleştirir
-    setWatchedMovies((prev) =>
-      prev.includes(id)
-        ? prev.filter((movieId) => movieId !== id)
-        : [...prev, id]
+    handleSingleToggle(id);
+  };
+
+  const handleRemove = () => {
+    const areYouSure = window.confirm(
+      "Tüm işaretleri silmek istediğine emin misin?"
     );
+    if (areYouSure) {
+      localStorage.removeItem("watchedMovies");
+      window.location.reload();
+    }
   };
 
   const filteredMoviesAndSeries = marvelWatchlist.filter((movie) => {
@@ -94,9 +119,7 @@ export default function Component() {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <h1 className="w-full flex justify-center items-center text-4xl font-bold text-center mb-2 gap-3">
-          <img src="/marvel.jpg" 
-          className="w-20 h-14 rounded-md"
-          />
+          <img src="/marvel.jpg" className="w-20 h-14 rounded-md" />
           Movies Checklist
         </h1>
         <p className="text-center text-gray-600 mb-8">
@@ -143,6 +166,13 @@ export default function Component() {
           >
             Unwatched
           </Button>
+          <Button
+            onClick={handleRemove}
+            variant="default"
+            className="bg-red-600 text-white"
+          >
+            Remove All
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -171,11 +201,7 @@ export default function Component() {
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-xl font-semibold">{movie.title}</h2>
                     {isWatched ? (
-                      <Badge
-                        className="bg-red-500 text-white"
-                      >
-                        Watched
-                      </Badge>
+                      <Badge className="bg-red-500 text-white">Watched</Badge>
                     ) : (
                       <Badge
                         variant="secondary"
