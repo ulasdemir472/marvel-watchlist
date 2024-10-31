@@ -10,6 +10,7 @@ import { CheckCircle } from "lucide-react";
 export default function Component() {
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [watchedPercentage, setWatchedPercentage] = useState(0);
 
   useEffect(() => {
     const savedWatchedMovies =
@@ -19,6 +20,9 @@ export default function Component() {
 
   useEffect(() => {
     localStorage.setItem("watchedMovies", JSON.stringify(watchedMovies));
+    setWatchedPercentage(
+      Math.round((watchedMovies.length / marvelWatchlist.length) * 100)
+    );
   }, [watchedMovies]);
 
   const toggleWatched = (id) => {
@@ -41,7 +45,7 @@ export default function Component() {
   const filteredList = filter === "year" ? sortedList : filteredMoviesAndSeries;
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold text-center mb-2">
           Marvel Movies Checklist
@@ -50,7 +54,13 @@ export default function Component() {
           Keep track of the Marvel movies you have watched!
         </p>
 
-        <div className="flex justify-center space-x-4 mb-8">
+        <div className="text-center mb-4">
+          <p className="text-lg font-medium">
+            Watched Percentage: {watchedPercentage}%
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:flex md:justify-center gap-4 mb-8">
           <Button
             onClick={() => setFilter("all")}
             variant={filter === "all" ? "default" : "outline"}
