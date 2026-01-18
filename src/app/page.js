@@ -1,41 +1,39 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
 import marvelWatchlist from "@/data";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle } from "lucide-react";
+import { Star, Trash2, ArrowUp } from "lucide-react";
 
-export default function Component() {
+export default function ComicPage() {
+  // State
   const [watchedMovies, setWatchedMovies] = useState([]);
-  const [filter, setFilter] = useState("all");
+  const [ratings, setRatings] = useState({});
+  const [filter, setFilter] = useState("all"); // 'all', 'watched', 'unwatched', 'year', 'phase'
+  const [typeFilter, setTypeFilter] = useState("all"); // 'all', 'Movie', 'Series'
   const [watchedPercentage, setWatchedPercentage] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [askConfirmation, setAskConfirmation] = useState(true);
 
+  // --- Effects ---
+
+  // Scroll listener
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollButton(window.scrollY > 300);
     };
-
     window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
+  // Initial Load
   useEffect(() => {
-    const savedWatchedMovies =
-      JSON.parse(localStorage.getItem("watchedMovies")) || [];
-    setWatchedMovies(savedWatchedMovies);
+    const savedWatched = JSON.parse(localStorage.getItem("watchedMovies")) || [];
+    const savedRatings = JSON.parse(localStorage.getItem("marvelRatings")) || {};
+    setWatchedMovies(savedWatched);
+    setRatings(savedRatings);
   }, []);
 
+  // Sync Watched & Percentage
   useEffect(() => {
     localStorage.setItem("watchedMovies", JSON.stringify(watchedMovies));
     setWatchedPercentage(
@@ -43,50 +41,57 @@ export default function Component() {
     );
   }, [watchedMovies]);
 
+  // Sync Ratings
+  useEffect(() => {
+    localStorage.setItem("marvelRatings", JSON.stringify(ratings));
+  }, [ratings]);
+
+  // --- Handlers ---
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleRating = (id, score) => {
+    setRatings((prev) => ({ ...prev, [id]: score }));
+  };
+
   const confirmMarkAllPrevious = (currentMovieIndex) => {
     const allPreviousMovies = marvelWatchlist
       .slice(0, currentMovieIndex + 1)
       .map((movie) => movie.id);
 
     const confirmMarkAll = window.confirm(
-      "Önceki filmleri de 'İzlendi' olarak işaretlemek ister misiniz?"
+      "WAIT HERO! Should we report previous missions as ACCOMPLISHED too?"
     );
 
     if (confirmMarkAll) {
       setWatchedMovies((prev) => [...new Set([...prev, ...allPreviousMovies])]);
       return true;
     } else {
-      setAskConfirmation(false); // Kullanıcı 'Hayır' derse, tekrar sormamak için ayarla
+      setAskConfirmation(false);
       return false;
     }
   };
 
   const handleSingleToggle = (id) => {
     setWatchedMovies((prev) =>
-      prev.includes(id)
-        ? prev.filter((movieId) => movieId !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id]
     );
   };
 
   const toggleWatched = (id) => {
     if (!watchedMovies.includes(id)) {
-      const currentMovieIndex = marvelWatchlist.findIndex(
-        (movie) => movie.id === id
-      );
-
+      const currentMovieIndex = marvelWatchlist.findIndex((m) => m.id === id);
       if (
         currentMovieIndex > 0 &&
         marvelWatchlist
           .slice(0, currentMovieIndex)
-          .some((movie) => !watchedMovies.includes(movie.id))
+          .some((m) => !watchedMovies.includes(m.id))
       ) {
-        // Eğer askConfirmation true ise onay sor, aksi takdirde direkt geç
         if (askConfirmation) {
           const markedAll = confirmMarkAllPrevious(currentMovieIndex);
-          if (!markedAll) {
-            handleSingleToggle(id);
-          }
+          if (!markedAll) handleSingleToggle(id);
           return;
         }
       }
@@ -94,142 +99,264 @@ export default function Component() {
     handleSingleToggle(id);
   };
 
-  const handleRemove = () => {
-    const areYouSure = window.confirm(
-      "Tüm işaretleri silmek istediğine emin misin?"
-    );
-    if (areYouSure) {
+  const handleRemoveAll = () => {
+    if (window.confirm("DANGER! This will wipe all mission data! Are you sure?")) {
       localStorage.removeItem("watchedMovies");
+      localStorage.removeItem("marvelRatings");
       window.location.reload();
     }
   };
 
-  const filteredMoviesAndSeries = marvelWatchlist.filter((movie) => {
-    if (filter === "all") return true;
-    if (filter === "watched") return watchedMovies.includes(movie.id);
-    if (filter === "unwatched") return !watchedMovies.includes(movie.id);
-    return true;
-  });
+  // --- Render Helpers ---
 
-  const sortedList = [...marvelWatchlist].sort((a, b) => a.year - b.year);
+  // Apply type filter helper
+  const applyTypeFilter = (list) => {
+    if (typeFilter === 'all') return list;
+    return list.filter(m => m.type === typeFilter);
+  };
 
-  const filteredList = filter === "year" ? sortedList : filteredMoviesAndSeries;
+  const renderContent = () => {
+    if (filter === 'phase') {
+      // Group by Phase - handle all phase names properly
+      const phaseGroups = {};
+      const phaseOrder = ['Phase 6', 'Phase 5', 'Phase 4', 'Phase 3', 'Phase 2', 'Phase 1', 'Defenders Saga', 'Marvel Television', 'Animation'];
+      
+      // Initialize all phase groups
+      phaseOrder.forEach(p => phaseGroups[p] = []);
+      
+      // Apply type filter first, then group
+      applyTypeFilter(marvelWatchlist).forEach(m => {
+        if (m.phase && phaseGroups[m.phase] !== undefined) {
+          phaseGroups[m.phase].push(m);
+        } else if (m.phase) {
+          // Handle any new phases
+          if (!phaseGroups[m.phase]) phaseGroups[m.phase] = [];
+          phaseGroups[m.phase].push(m);
+        }
+      });
+
+      // Render phases in order, skip empty ones
+      return phaseOrder
+        .filter(phaseName => phaseGroups[phaseName] && phaseGroups[phaseName].length > 0)
+        .map(phaseName => (
+          <div key={phaseName} className="mb-20 relative border-l-8 border-comic-black ml-2 md:ml-8 pl-8 py-8">
+            {/* Phase Header Balloon */}
+            <div className="absolute -left-6 -top-4 bg-comic-red text-white font-black text-3xl px-6 py-3 -rotate-2 border-4 border-comic-black shadow-comic z-10">
+              {phaseName.toUpperCase()}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-8">
+              {phaseGroups[phaseName].map(movie => (
+                <MovieCard 
+                  key={movie.id} 
+                  movie={movie} 
+                  isWatched={watchedMovies.includes(movie.id)}
+                  rating={ratings[movie.id] || 0}
+                  onToggle={() => toggleWatched(movie.id)}
+                  onRate={(score) => handleRating(movie.id, score)}
+                />
+              ))}
+            </div>
+          </div>
+        ));
+    }
+
+    // Default Grid - apply type filter to all views
+    let displayedList = applyTypeFilter(marvelWatchlist);
+    if (filter === "year") displayedList = applyTypeFilter([...marvelWatchlist]).sort((a, b) => a.year - b.year);
+    else if (filter === "watched") displayedList = applyTypeFilter(marvelWatchlist).filter(m => watchedMovies.includes(m.id));
+    else if (filter === "unwatched") displayedList = applyTypeFilter(marvelWatchlist).filter(m => !watchedMovies.includes(m.id));
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {displayedList.map(movie => (
+          <MovieCard 
+            key={movie.id} 
+            movie={movie} 
+            isWatched={watchedMovies.includes(movie.id)}
+            rating={ratings[movie.id] || 0}
+            onToggle={() => toggleWatched(movie.id)}
+            onRate={(score) => handleRating(movie.id, score)}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <h1 className="w-full flex justify-center items-center text-4xl font-bold text-center mb-2 gap-3">
-          <img src="/marvel.jpg" className="w-20 h-14 rounded-md" />
-          Filmler ve Diziler İzleme Listesi
-        </h1>
-        <p className="text-center text-gray-600 mb-8">
-          İzlediğin Marvel filmleri ve dizilerini takip et!
-        </p>
+    <div className="min-h-screen pb-12 overflow-x-hidden">
+      
+      {/* Hero Header */}
+      <div className="relative bg-comic-white border-b-4 border-comic-black mb-12 transform skew-y-1">
+        <div className="container mx-auto px-4 py-12 transform -skew-y-1">
+          <div className="flex flex-col items-center justify-center text-center space-y-4">
+            
+            <div className="relative inline-block">
+              <h1 className="text-6xl md:text-8xl font-black text-comic-red uppercase tracking-tighter text-stroke drop-shadow-comic">
+                MCU Chronology
+              </h1>
+              <span className="absolute -top-6 -right-8 bg-comic-yellow border-2 border-comic-black px-4 py-1 rotate-12 text-sm font-bold shadow-comic-sm">
+                ASSEMBLE!
+              </span>
+            </div>
 
-        <div className="text-center mb-4">
-          <p className="text-lg font-medium">
-            İzleme Oranı: {watchedPercentage}%
-          </p>
-        </div>
+            <p className="max-w-xl text-xl font-bold bg-comic-black text-white px-6 py-2 -rotate-1 shadow-comic">
+              Track your mission through the Multiverse!
+            </p>
 
-        {showScrollButton && (
-          <Button
-            onClick={scrollToTop}
-            className="fixed bottom-8 right-8 p-3 z-50 rounded-full shadow-md focus:outline-none"
-          >
-            En Üste Çık
-          </Button>
-        )}
-
-        <div className="grid grid-cols-2 md:flex md:justify-center gap-4 mb-8">
-          <Button
-            onClick={() => setFilter("all")}
-            variant={filter === "all" ? "default" : "outline"}
-          >
-            Hikayeye göre sırala
-          </Button>
-          <Button
-            onClick={() => setFilter("year")}
-            variant={filter === "year" ? "default" : "outline"}
-          >
-            Çıkış yılına göre sırala
-          </Button>
-          <Button
-            onClick={() => setFilter("watched")}
-            variant={filter === "watched" ? "default" : "outline"}
-          >
-            İzlenenler
-          </Button>
-          <Button
-            onClick={() => setFilter("unwatched")}
-            variant={filter === "unwatched" ? "default" : "outline"}
-          >
-            İzlenmeyenler
-          </Button>
-          <Button
-            onClick={handleRemove}
-            variant="default"
-            className="bg-red-600 text-white"
-          >
-            Bütün işaretlenenleri sil
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredList.map((movie) => {
-            const isWatched = watchedMovies.includes(movie.id);
-            return (
-              <div
-                key={movie.id}
-                className={`bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ${
-                  isWatched ? "bg-green-50 scale-102" : ""
-                }`}
-              >
-                <div className="relative">
-                  <img
-                    src={movie.poster}
-                    alt={`${movie.title} poster`}
-                    className="w-full object-cover"
-                  />
-                  {isWatched && (
-                    <div className="absolute inset-0 bg-green-500 bg-opacity-30 flex items-center justify-center">
-                      <CheckCircle className="w-16 h-16 text-white" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex justify-between flex-col p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-semibold">{movie.title}</h2>
-                    {isWatched ? (
-                      <Badge className="bg-red-500 text-white">İzlendi</Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gray-200 text-black"
-                      >
-                        İzlenmedi
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-gray-600 mb-4">{movie.year}</p>
-                  <div className="flex items-center">
-                    <Checkbox
-                      id={`movie-${movie.id}`}
-                      checked={isWatched}
-                      onCheckedChange={() => toggleWatched(movie.id)}
-                      className="w-6 h-6 border-2 border-primary"
-                    />
-                    <label
-                      htmlFor={`movie-${movie.id}`}
-                      className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {isWatched ? "İzlendi" : "İzlendi olarak işaretle"}
-                    </label>
-                  </div>
+            {/* Progress Bar */}
+            <div className="w-full max-w-md mt-6">
+              <div className="flex justify-between text-lg font-bold mb-1">
+                <span>MISSION PROGRESS</span>
+                <span>{watchedPercentage}%</span>
+              </div>
+              <div className="w-full h-8 bg-white border-4 border-comic-black shadow-comic-sm p-1">
+                <div 
+                  className="h-full bg-comic-blue transition-all duration-500 ease-out relative overflow-hidden"
+                  style={{ width: `${watchedPercentage}%` }}
+                >
+                  <div className="absolute inset-0 bg-[radial-gradient(#000_1px,transparent_1px)] bg-[length:4px_4px] opacity-20"></div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4">
+        
+        {/* Controls Panel */}
+        <div className="bg-white border-4 border-comic-black p-4 mb-12 shadow-comic max-w-5xl mx-auto flex flex-wrap gap-4 justify-center items-center relative z-20">
+          {/* Sort Order Filters */}
+          <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label="Story Order" />
+          <FilterButton active={filter === 'year'} onClick={() => setFilter('year')} label="Release Year" />
+          <FilterButton active={filter === 'phase'} onClick={() => setFilter('phase')} label="Phase Timeline" />
+          {/* <FilterButton active={filter === 'watched'} onClick={() => setFilter('watched')} label="Completed" /> */}
+          {/* <FilterButton active={filter === 'unwatched'} onClick={() => setFilter('unwatched')} label="Pending" /> */}
+          
+          <div className="h-8 w-1 bg-comic-black mx-2 hidden md:block"></div>
+          
+          {/* Type Filters */}
+          <FilterButton active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} label="All Types" variant="type" />
+          <FilterButton active={typeFilter === 'Movie'} onClick={() => setTypeFilter('Movie')} label="Movies" variant="type" />
+          <FilterButton active={typeFilter === 'Series'} onClick={() => setTypeFilter('Series')} label="Series" variant="type" />
+          
+          <div className="h-8 w-1 bg-comic-black mx-2 hidden md:block"></div>
+          
+          <button 
+            onClick={handleRemoveAll}
+            className="group px-4 py-2 bg-comic-red text-white font-bold border-2 border-comic-black shadow-comic-sm hover:shadow-comic-hover hover:-translate-y-1 transition-all flex items-center gap-2"
+          >
+            <Trash2 size={18} className="stroke-[3]" />
+            RESET
+          </button>
+        </div>
+
+        {/* Dynamic Content */}
+        {renderContent()}
+
+      </div>
+
+      {showScrollButton && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 bg-comic-red text-white p-4 border-4 border-comic-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all z-50 rounded-none"
+        >
+          <ArrowUp size={32} strokeWidth={3} />
+        </button>
+      )}
+
+    </div>
+  );
+}
+
+function FilterButton({ active, onClick, label, variant }) {
+  const baseClass = "px-4 py-2 font-bold border-2 border-comic-black shadow-comic-sm transition-all hover:-translate-y-1 uppercase tracking-tight";
+  const activeClass = variant === 'type' 
+    ? (active ? 'bg-comic-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-50')
+    : (active ? 'bg-comic-yellow text-black' : 'bg-white text-gray-700 hover:bg-gray-50');
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`${baseClass} ${activeClass}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function MovieCard({ movie, isWatched, rating, onToggle, onRate }) {
+  return (
+    <div className="relative group h-full">
+      <div className="bg-white border-4 border-comic-black shadow-comic h-full flex flex-col transition-transform duration-200 group-hover:-translate-y-2 group-hover:shadow-comic-hover">
+        
+        {/* Image Frame */}
+        <div className="relative border-b-4 border-comic-black overflow-hidden bg-gray-200 aspect-[2/3]">
+          <img 
+            src={movie.poster} 
+            alt={movie.title}
+            className={`w-full h-full object-cover transition-all duration-300 ${isWatched ? 'grayscale-[50%] sepia-[30%]' : 'group-hover:scale-105'}`}
+          />
+          
+          {isWatched && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 backdrop-blur-[2px]">
+              <div className="border-4 border-comic-red p-2 -rotate-12 bg-white/90 shadow-comic cursor-default">
+                <span className="text-4xl font-black text-comic-red uppercase tracking-widest px-4 border-2 border-comic-red border-dashed">
+                  WATCHED
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Type Badge */}
+          <div className="absolute top-2 right-2 bg-comic-blue text-white border-2 border-comic-black px-2 py-1 font-bold text-xs shadow-comic-sm z-20 uppercase transform rotate-2">
+            {movie.type === 'series' ? 'SERIES' : 'MOVIE'}
+          </div>
+
+          <div className="absolute top-2 left-2 bg-comic-yellow border-2 border-comic-black px-2 py-1 font-bold text-xs shadow-comic-sm z-20">
+            #{movie.id}
+          </div>
+        </div>
+
+        {/* Caption Box */}
+        <div className="p-4 flex flex-col flex-grow bg-[radial-gradient(#e5e5e5_1px,transparent_1px)] bg-[length:10px_10px]">
+          <h2 className="text-xl font-bold leading-none mb-2 line-clamp-2 uppercase">
+            {movie.title}
+          </h2>
+          <p className="text-sm font-bold bg-black text-white px-2 py-1 w-fit mb-4 -rotate-1">
+            YEAR: {movie.year}
+          </p>
+
+          <div className="mt-auto space-y-3">
+            {/* Rating Stars */}
+            <div className="flex items-center gap-1 justify-center bg-white border-2 border-comic-black p-1 shadow-sm">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={(e) => { e.stopPropagation(); onRate(star); }}
+                  className="focus:outline-none transition-transform active:scale-90 hover:scale-110"
+                >
+                  <Star 
+                    size={20} 
+                    className={`stroke-[3px] ${star <= rating ? 'fill-comic-yellow text-comic-black' : 'text-gray-300 fill-gray-100'}`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={onToggle}
+              className={`w-full py-2 font-black border-2 border-comic-black shadow-comic-sm transition-all active:translate-y-1 active:shadow-none flex items-center justify-center gap-2 uppercase tracking-wider
+                ${isWatched 
+                  ? 'bg-gray-200 text-gray-500 hover:bg-gray-300' 
+                  : 'bg-comic-blue text-white hover:bg-blue-400'
+                }`}
+            >
+              {isWatched ? 'Revisit Mission' : 'Complete Mission'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
