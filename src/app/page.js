@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import marvelWatchlist from "@/data";
+import { useLanguage } from "@/context/LanguageContext";
 import { Star, Trash2, ArrowUp } from "lucide-react";
 
 export default function ComicPage() {
+  const { t } = useLanguage();
+  
   // State
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [ratings, setRatings] = useState({});
@@ -62,7 +65,7 @@ export default function ComicPage() {
       .map((movie) => movie.id);
 
     const confirmMarkAll = window.confirm(
-      "WAIT HERO! Should we report previous missions as ACCOMPLISHED too?"
+      t("main.markPreviousConfirm")
     );
 
     if (confirmMarkAll) {
@@ -100,7 +103,7 @@ export default function ComicPage() {
   };
 
   const handleRemoveAll = () => {
-    if (window.confirm("DANGER! This will wipe all mission data! Are you sure?")) {
+    if (window.confirm(t("main.resetConfirm"))) {
       localStorage.removeItem("watchedMovies");
       localStorage.removeItem("marvelRatings");
       window.location.reload();
@@ -154,6 +157,7 @@ export default function ComicPage() {
                   rating={ratings[movie.id] || 0}
                   onToggle={() => toggleWatched(movie.id)}
                   onRate={(score) => handleRating(movie.id, score)}
+                  t={t}
                 />
               ))}
             </div>
@@ -177,6 +181,7 @@ export default function ComicPage() {
             rating={ratings[movie.id] || 0}
             onToggle={() => toggleWatched(movie.id)}
             onRate={(score) => handleRating(movie.id, score)}
+            t={t}
           />
         ))}
       </div>
@@ -193,21 +198,21 @@ export default function ComicPage() {
             
             <div className="relative inline-block">
               <h1 className="text-6xl md:text-8xl font-black text-comic-red uppercase tracking-tighter text-stroke drop-shadow-comic">
-                MCU Chronology
+                {t("main.title")}
               </h1>
               <span className="absolute -top-6 -right-8 bg-comic-yellow border-2 border-comic-black px-4 py-1 rotate-12 text-sm font-bold shadow-comic-sm">
-                ASSEMBLE!
+                {t("main.assemble")}
               </span>
             </div>
 
             <p className="max-w-xl text-xl font-bold bg-comic-black text-white px-6 py-2 -rotate-1 shadow-comic">
-              Track your mission through the Multiverse!
+              {t("main.subtitle")}
             </p>
 
             {/* Progress Bar */}
             <div className="w-full max-w-md mt-6">
               <div className="flex justify-between text-lg font-bold mb-1">
-                <span>MISSION PROGRESS</span>
+                <span>{t("main.missionProgress")}</span>
                 <span>{watchedPercentage}%</span>
               </div>
               <div className="w-full h-8 bg-white border-4 border-comic-black shadow-comic-sm p-1">
@@ -228,18 +233,18 @@ export default function ComicPage() {
         {/* Controls Panel */}
         <div className="bg-white border-4 border-comic-black p-4 mb-12 shadow-comic max-w-5xl mx-auto flex flex-wrap gap-4 justify-center items-center relative z-20">
           {/* Sort Order Filters */}
-          <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label="Story Order" />
-          <FilterButton active={filter === 'year'} onClick={() => setFilter('year')} label="Release Year" />
-          <FilterButton active={filter === 'phase'} onClick={() => setFilter('phase')} label="Phase Timeline" />
+          <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label={t("main.storyOrder")} />
+          <FilterButton active={filter === 'year'} onClick={() => setFilter('year')} label={t("main.releaseYear")} />
+          <FilterButton active={filter === 'phase'} onClick={() => setFilter('phase')} label={t("main.phaseTimeline")} />
           {/* <FilterButton active={filter === 'watched'} onClick={() => setFilter('watched')} label="Completed" /> */}
           {/* <FilterButton active={filter === 'unwatched'} onClick={() => setFilter('unwatched')} label="Pending" /> */}
           
           <div className="h-8 w-1 bg-comic-black mx-2 hidden md:block"></div>
           
           {/* Type Filters */}
-          <FilterButton active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} label="All Types" variant="type" />
-          <FilterButton active={typeFilter === 'Movie'} onClick={() => setTypeFilter('Movie')} label="Movies" variant="type" />
-          <FilterButton active={typeFilter === 'Series'} onClick={() => setTypeFilter('Series')} label="Series" variant="type" />
+          <FilterButton active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} label={t("main.allTypes")} variant="type" />
+          <FilterButton active={typeFilter === 'Movie'} onClick={() => setTypeFilter('Movie')} label={t("main.movies")} variant="type" />
+          <FilterButton active={typeFilter === 'Series'} onClick={() => setTypeFilter('Series')} label={t("main.series")} variant="type" />
           
           <div className="h-8 w-1 bg-comic-black mx-2 hidden md:block"></div>
           
@@ -248,7 +253,7 @@ export default function ComicPage() {
             className="group px-4 py-2 bg-comic-red text-white font-bold border-2 border-comic-black shadow-comic-sm hover:shadow-comic-hover hover:-translate-y-1 transition-all flex items-center gap-2"
           >
             <Trash2 size={18} className="stroke-[3]" />
-            RESET
+            {t("main.reset")}
           </button>
         </div>
 
@@ -286,7 +291,7 @@ function FilterButton({ active, onClick, label, variant }) {
   );
 }
 
-function MovieCard({ movie, isWatched, rating, onToggle, onRate }) {
+function MovieCard({ movie, isWatched, rating, onToggle, onRate, t }) {
   return (
     <div className="relative group h-full">
       <div className="bg-white border-4 border-comic-black shadow-comic h-full flex flex-col transition-transform duration-200 group-hover:-translate-y-2 group-hover:shadow-comic-hover">
@@ -303,7 +308,7 @@ function MovieCard({ movie, isWatched, rating, onToggle, onRate }) {
             <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 backdrop-blur-[2px]">
               <div className="border-4 border-comic-red p-2 -rotate-12 bg-white/90 shadow-comic cursor-default">
                 <span className="text-4xl font-black text-comic-red uppercase tracking-widest px-4 border-2 border-comic-red border-dashed">
-                  WATCHED
+                  {t("main.watched")}
                 </span>
               </div>
             </div>
@@ -311,7 +316,7 @@ function MovieCard({ movie, isWatched, rating, onToggle, onRate }) {
 
           {/* Type Badge */}
           <div className="absolute top-2 right-2 bg-comic-blue text-white border-2 border-comic-black px-2 py-1 font-bold text-xs shadow-comic-sm z-20 uppercase transform rotate-2">
-            {movie.type === 'series' ? 'SERIES' : 'MOVIE'}
+            {movie.type.toLowerCase() === 'series' ? t("common.series") : t("common.movie")}
           </div>
 
           <div className="absolute top-2 left-2 bg-comic-yellow border-2 border-comic-black px-2 py-1 font-bold text-xs shadow-comic-sm z-20">
@@ -325,7 +330,7 @@ function MovieCard({ movie, isWatched, rating, onToggle, onRate }) {
             {movie.title}
           </h2>
           <p className="text-sm font-bold bg-black text-white px-2 py-1 w-fit mb-4 -rotate-1">
-            YEAR: {movie.year}
+            {t("main.year")}: {movie.year}
           </p>
 
           <div className="mt-auto space-y-3">
@@ -354,7 +359,7 @@ function MovieCard({ movie, isWatched, rating, onToggle, onRate }) {
                   : 'bg-comic-blue text-white hover:bg-blue-400'
                 }`}
             >
-              {isWatched ? 'Revisit Mission' : 'Complete Mission'}
+              {isWatched ? t("main.revisitMission") : t("main.completeMission")}
             </button>
           </div>
         </div>

@@ -1,4 +1,6 @@
 import "./globals.css";
+import { LanguageProvider } from "@/context/LanguageContext";
+import Navbar from "@/components/Navbar";
 
 export const metadata = {
   title: "Marvel Watchlist",
@@ -12,7 +14,10 @@ export default function RootLayout({ children }) {
         className="font-comic antialiased bg-comic-white"
         suppressHydrationWarning
       >
-        {children}
+        <LanguageProvider>
+          <Navbar />
+          <main>{children}</main>
+        </LanguageProvider>
       </body>
     </html>
   );
